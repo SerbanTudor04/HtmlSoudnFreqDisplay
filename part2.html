@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    body {
+            font-family: sans-serif;
+            background-color: #1a1a1a;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        #container {
+            text-align: center;
+            width: 80%;
+            max-width: 800px;
+        }
+
+        input[type="file"] {
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #333;
+            border-radius: 5px;
+            cursor: pointer;
+            color: white;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 300px;
+            background-color: #000;
+            border-bottom: 2px solid #00ffcc;
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.2);
+            margin-bottom: 20px;
+        }
+
+        audio {
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        /* EQ Controls Styling */
+        .eq-controls {
+            display: flex;
+            justify-content: space-around;
+            background: #333;
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        label {
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+            color: #00ffcc;
+        }
+
+        input[type=range] {
+            -webkit-appearance: slider-vertical; /* Makes sliders vertical in some browsers */
+            width: 20px;
+            height: 100px;
+        }
+  </style>
+</head>
+<body>
+    <div id="container">
+        
+        <input type="file" id="fileInput" accept="audio/*" />
+        
+        <canvas id="visualizer"></canvas>
+
+        <div class="eq-controls">
+            <div class="slider-group">
+                <label for="low-gain">Low</label>
+                <input type="range" id="low-gain" min="-40" max="40" value="0" step="1">
+            </div>
+            <div class="slider-group">
+                <label for="mid-gain">Mid</label>
+                <input type="range" id="mid-gain" min="-40" max="40" value="0" step="1">
+            </div>
+            <div class="slider-group">
+                <label for="high-gain">High</label>
+                <input type="range" id="high-gain" min="-40" max="40" value="0" step="1">
+            </div>
+        </div>
+
+        <audio id="audioPlayer" controls></audio>
+    </div>
+
+<script>
+
+    const fileInput = document.getElementById('fileInput');
+    const audioPlayer = document.getElementById('audioPlayer');
+    const canvas = document.getElementById('visualizer');
+    const ctx = canvas.getContext('2d');
+
+    let audioContext;
+    let analyser;
+    let source;
+    let isInitialized = false;
+    let dataArray;
+
+
+
+
+    function fileChange(e){
+      const file  = e.target.files[0];
+      if(!file){
+        console.log("no file selected");
+        return;
+      };
+      const fileURL = URL.createObjectURL(file);
+      audioPlayer.src = fileURL;
+      audioPlayer.load();
+      audioPlayer.play();
+
+      if(!isInitialized){
+        // web audio api must happen after user
+        initAudioContext();
+        isInitialized = true;
+      }
+
+
+    }
+
+
+    function initAudioContext(){
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+      // Low Shelf: Affects everything below a frequency (bass)
+      lowShelf = audioContext.createBiquadFilter();
+      lowShelf.type = 'lowshelf';
+      lowShelf.frequency.value = 250; // 250Hz and below
+      lowShelf.gain.value = 0;
+
+      // Peaking: Affects a specific range (mids)
+      midPeaking = audioContext.createBiquadFilter();
+      midPeaking.type = 'peaking';
+      midPeaking.frequency.value = 1000; // Center at 1000Hz
+      midPeaking.Q.value = 1; // Bandwidth
+      midPeaking.gain.value = 0;
+
+      // High Shelf: Affects everything above a frequency (treble)
+      highShelf = audioContext.createBiquadFilter();
+      highShelf.type = 'highshelf';
+      highShelf.frequency.value = 4000; // 4000Hz and above
+      highShelf.gain.value = 0;
+
+
+      analyser = audioContext.createAnalyser();
+      source = audioContext.createMediaElementSource(audioPlayer);
+      source.connect(analyser); // connect the analyzer
+
+      lowShelf.connect(midPeaking);
+      midPeaking.connect(highShelf);
+      highShelf.connect(analyser);
+
+      analyser.connect(audioContext.destination); // connect to output device
+      analyser.fftSize = 256;// control bar density
+      const bufferLength = analyser.frequencyBinCount;
+      dataArray = new Uint8Array(bufferLength);
+      isInitialized = true;
+      renderFrame();
+    }
+
+
+    function renderFrame(){
+      requestAnimationFrame(renderFrame);
+      if(!analyser){
+        console.log("no analyser");
+        return
+      }
+
+      const bufferLen = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLen);
+      analyser.getByteFrequencyData(dataArray);
+
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0,0,canvas.width, canvas.height);
+
+
+      const barW = (canvas.width / bufferLen)*2.5 ;
+      let barH;
+      let x = 0;
+
+      for(let i=0; i<bufferLen; i++){
+        barH = dataArray[i]; //val [0;255]
+        
+
+        //gradient color based on height
+        const r = barH + (25 * (i/bufferLen));
+        const g = 250 * (i/bufferLen);
+        const b = 50;
+
+        ctx.fillStyle = `rgb(${r},${g},${b})`;
+        ctx.fillRect(x, canvas.height - barH/2, barW, barH/2);
+
+        x += barW + 1;
+      }
+
+      
+    }
+
+    function resizeCanvas(){
+      canvas.width = canvas.clientWidth;
+      canvas.height = canvas.clientHeight;
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+    
+    let lowShelf, midPeaking, highShelf;
+    const lowSlider = document.getElementById('low-gain');
+    const midSlider = document.getElementById('mid-gain');
+    const highSlider = document.getElementById('high-gain');
+
+    lowSlider.addEventListener('input', function() {
+        if(lowShelf) lowShelf.gain.value = this.value;
+    });
+    midSlider.addEventListener('input', function() {
+        if(midPeaking) midPeaking.gain.value = this.value;
+    });
+    highSlider.addEventListener('input', function() {
+        if(highShelf) highShelf.gain.value = this.value;
+    });
+    window.onload=()=>{
+      fileInput.addEventListener("change", fileChange);
+      
+
+    }
+
+
+</script>
+
+</body>
+</html>
