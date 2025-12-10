@@ -75,11 +75,12 @@
   </style>
 </head>
 <body>
+        <canvas id="visualizer"></canvas>
+
     <div id="container">
         
         <input type="file" id="fileInput" accept="audio/*" />
         
-        <canvas id="visualizer"></canvas>
 
         <div class="eq-controls">
             <div class="slider-group">
@@ -160,7 +161,8 @@
 
 
       analyser = audioContext.createAnalyser();
-      analyser.fftSize = 256;
+      // analyser.fftSize = 256;//Fast Fourier Transform
+      analyser.fftSize = 8192;//Fast Fourier Transform
 
       source.connect(lowShelf);
       lowShelf.connect(midPeaking);
@@ -179,22 +181,23 @@
       const dataArray = new Uint8Array(bufferLen);
       analyser.getByteFrequencyData(dataArray);
 
-      ctx.fillStyle = "#000";
+      ctx.fillStyle = "#fff";
       ctx.fillRect(0,0,canvas.width, canvas.height);
 
-      const barW = (canvas.width / bufferLen) * 2.5;
+      const barW = (canvas.width / bufferLen);
+      console.log(barW);
       let barH;
       let x = 0;
-
+      console.log(bufferLen);
       for(let i=0; i<bufferLen; i++){
         barH = dataArray[i]; 
 
         // Removed the /2 division so bars are taller and easier to see
         const drawHeight = barH; 
 
-        const r = barH + (25 * (i/bufferLen));
+        const r = barH + (30 * (i/bufferLen));
         const g = 250 * (i/bufferLen);
-        const b = 50;
+        const b = 0 * (i/bufferLen);
 
         ctx.fillStyle = `rgb(${r},${g},${b})`;
         // Adjusted y position calculation
@@ -205,7 +208,7 @@
     }
 
     function resizeCanvas(){
-      canvas.width = canvas.clientWidth;
+      canvas.width = window.innerWidth * 0.8; // 80% of window width
       canvas.height = canvas.clientHeight;
     }
 
