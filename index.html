@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    body {
+            font-family: sans-serif;
+            background-color: #1a1a1a;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        #container {
+            text-align: center;
+            width: 80%;
+            max-width: 800px;
+        }
+
+        /* Styling the file input */
+        input[type="file"] {
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #333;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        /* The canvas where the bars will be drawn */
+        canvas {
+            display: block;
+            width: 100%;
+            height: 300px;
+            background-color: #000;
+            border-bottom: 2px solid #00ffcc;
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.2);
+        }
+
+        audio {
+            width: 100%;
+            margin-top: 20px;
+        }
+  </style>
+</head>
+<body>
+    <input type="file" name="" id="fileInput">
+    <canvas id="visualizer"></canvas>
+    <audio id="audioPlayer" controls></audio>
+
+<script>
+
+    const fileInput = document.getElementById('fileInput');
+    const audioPlayer = document.getElementById('audioPlayer');
+    const canvas = document.getElementById('visualizer');
+    const ctx = canvas.getContext('2d');
+
+    let audioContext;
+    let analyser;
+    let source;
+    let isInitialized = false;
+    let dataArray;
+
+
+    function fileChange(e){
+      const file  = e.target.files[0];
+      const fileURL = URL.createObjectURL(file);
+      audioPlayer.src = fileURL;
+      audioPlayer.load();
+      audioPlayer.play();
+
+      if(!isInitialized){
+        // web audio api must happen after user
+        initAudioContext();
+        isInitialized = true;
+      }
+
+
+    }
+
+
+    function initAudioContext(){
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      analyser = audioContext.createAnalyser();
+      source = audioContext.createMediaElementSource(audioPlayer);
+      source.connect(analyser); // connect the analyzer
+      analyser.connect(audioContext.destination); // connect to output device
+      analyser.fftSize = 256;// control bar density
+      const bufferLength = analyser.frequencyBinCount;
+      dataArray = new Uint8Array(bufferLength);
+      isInitialized = true;
+      renderFrame();
+    }
+
+
+    function renderFrame(){
+      requestAnimationFrame(renderFrame);
+      if(!analyser){
+        console.log("no analyser");
+        return
+      }
+
+      const bufferLen = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLen);
+      analyser.getByteFrequencyData(dataArray);
+
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0,0,canvas.width, canvas.height);
+
+
+      const barW = (canvas.width / bufferLen)*2.5 ;
+      let barH;
+      let x = 0;
+
+      for(let i=0; i<bufferLen; i++){
+        barH = dataArray[i]; //val [0;255]
+        
+
+        //gradient color based on height
+        const r = barH + (25 * (i/bufferLen));
+        const g = 250 * (i/bufferLen);
+        const b = 50;
+
+        ctx.fillStyle = `rgb(${r},${g},${b})`;
+        ctx.fillRect(x, canvas.height - barH/2, barW, barH/2);
+
+        x += barW + 1;
+      }
+
+      
+    }
+
+    function resizeCanvas(){
+      canvas.width = canvas.clientWidth;
+      canvas.height = canvas.clientHeight;
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    window.onload=()=>{
+      fileInput.addEventListener("change", fileChange);
+      
+
+    }
+
+</script>
+
+</body>
+</html>
