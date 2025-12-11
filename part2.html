@@ -181,7 +181,7 @@
       const dataArray = new Uint8Array(bufferLen);
       analyser.getByteFrequencyData(dataArray);
 
-      ctx.fillStyle = "#fff";
+      ctx.fillStyle = "#000";
       ctx.fillRect(0,0,canvas.width, canvas.height);
 
       const barW = (canvas.width / bufferLen);
@@ -197,7 +197,7 @@
 
         const r = barH + (30 * (i/bufferLen));
         const g = 250 * (i/bufferLen);
-        const b = 0 * (i/bufferLen);
+        const b = 50;
 
         ctx.fillStyle = `rgb(${r},${g},${b})`;
         // Adjusted y position calculation
