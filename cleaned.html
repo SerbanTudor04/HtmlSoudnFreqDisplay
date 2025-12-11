@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Audio Visualizer with EQ</title>
+  <style>
+    body {
+        font-family: sans-serif;
+        background-color: #1a1a1a;
+        color: white;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        margin: 0;
+    }
+
+    #container {
+        text-align: center;
+        width: 80%;
+        max-width: 800px;
+    }
+
+    input[type="file"] {
+        margin-bottom: 20px;
+        padding: 10px;
+        background: #333;
+        border-radius: 5px;
+        cursor: pointer;
+        color: white;
+    }
+
+    canvas {
+        display: block;
+        width: 100%;
+        height: 300px;
+        background-color: #000;
+        border-bottom: 2px solid #00ffcc;
+        box-shadow: 0 0 20px rgba(0, 255, 204, 0.2);
+        margin-bottom: 20px;
+    }
+
+    audio {
+        width: 100%;
+        margin-bottom: 20px;
+    }
+
+    .eq-controls {
+        display: flex;
+        justify-content: space-around;
+        background: #333;
+        padding: 15px;
+        border-radius: 10px;
+    }
+
+    .slider-group {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    label {
+        font-size: 0.9rem;
+        margin-bottom: 5px;
+        color: #00ffcc;
+    }
+
+    input[type=range] {
+        -webkit-appearance: slider-vertical;
+        width: 20px;
+        height: 100px;
+    }
+  </style>
+</head>
+<body>
+        <canvas id="visualizer"></canvas>
+
+    <div id="container">
+        
+        <input type="file" id="fileInput" accept="audio/*" />
+        
+
+        <div class="eq-controls">
+            <div class="slider-group">
+                <label for="low-gain">Low</label>
+                <input type="range" id="low-gain" min="-40" max="40" value="0" step="1">
+            </div>
+            <div class="slider-group">
+                <label for="mid-gain">Mid</label>
+                <input type="range" id="mid-gain" min="-40" max="40" value="0" step="1">
+            </div>
+            <div class="slider-group">
+                <label for="high-gain">High</label>
+                <input type="range" id="high-gain" min="-40" max="40" value="0" step="1">
+            </div>
+        </div>
+
+        <audio id="audioPlayer" controls></audio>
+    </div>
+
+<script>
+    const fileInput = document.getElementById('fileInput');
+    const audioPlayer = document.getElementById('audioPlayer');
+    const canvas = document.getElementById('visualizer');
+    const ctx = canvas.getContext('2d');
+
+    // Controls
+    const lowSlider = document.getElementById('low-gain');
+    const midSlider = document.getElementById('mid-gain');
+    const highSlider = document.getElementById('high-gain');
+
+    // Audio Context Variables
+    let audioContext;
+    let analyser;
+    let source;
+    let isInitialized = false;
+    // EQ Nodes (Declared here so they are accessible globally)
+    let lowShelf, midPeaking, highShelf; 
+
+    function fileChange(e){
+      const file  = e.target.files[0];
+      if(!file){
+        console.log("no file selected");
+        return;
+      };
+      const fileURL = URL.createObjectURL(file);
+      audioPlayer.src = fileURL;
+      audioPlayer.load();
+      audioPlayer.play();
+
+      if(!isInitialized){
+        initAudioContext();
+        isInitialized = true;
+      }
+    }
+
+    function initAudioContext(){
+      
+    }
+
+    function renderFrame(){
+      
+    }
+
+    function resizeCanvas(){
+      canvas.width = window.innerWidth * 0.8; // 80% of window width
+      canvas.height = canvas.clientHeight;
+    }
+
+
+    lowSlider.addEventListener('input', function() {
+        if(lowShelf) lowShelf.gain.value = this.value;
+    });
+    midSlider.addEventListener('input', function() {
+        if(midPeaking) midPeaking.gain.value = this.value;
+    });
+    highSlider.addEventListener('input', function() {
+        if(highShelf) highShelf.gain.value = this.value;
+    });
+
+    window.addEventListener('resize', resizeCanvas);
+    
+    resizeCanvas();
+    fileInput.addEventListener("change", fileChange);
+
+</script>
+</body>
+</html>
