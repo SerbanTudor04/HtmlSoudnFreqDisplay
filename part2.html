@@ -106,17 +106,15 @@
     const canvas = document.getElementById('visualizer');
     const ctx = canvas.getContext('2d');
 
-    // Controls
     const lowSlider = document.getElementById('low-gain');
     const midSlider = document.getElementById('mid-gain');
     const highSlider = document.getElementById('high-gain');
 
-    // Audio Context Variables
+
     let audioContext;
     let analyser;
     let source;
     let isInitialized = false;
-    // EQ Nodes (Declared here so they are accessible globally)
     let lowShelf, midPeaking, highShelf; 
 
     function fileChange(e){
@@ -139,10 +137,8 @@
     function initAudioContext(){
       audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-      // 1. Create Source
       source = audioContext.createMediaElementSource(audioPlayer);
 
-      // 2. Create Filters
       lowShelf = audioContext.createBiquadFilter();
       lowShelf.type = 'lowshelf';
       lowShelf.frequency.value = 250;
@@ -199,7 +195,6 @@
         const b = 50;
 
         ctx.fillStyle = `rgb(${r},${g},${b})`;
-        // Adjusted y position calculation
         ctx.fillRect(x, canvas.height - drawHeight, barW, drawHeight);
 
         x += barW + 1;
